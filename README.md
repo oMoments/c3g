@@ -27,8 +27,10 @@ instances.
 
 ## Three things I claimed were new. They weren't.
 
-I paid for hostile review of my own novelty claims. All three came back already
-published. Here they are, with who got there first:
+I ran adversarial AI review against my own novelty claims — several rounds,
+prompted to search prior art and refute me rather than agree. Not human peer
+review. All three came back already published. Here they are, with who got there
+first:
 
 | What I claimed | Who did it first |
 |---|---|

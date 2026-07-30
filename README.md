@@ -89,6 +89,20 @@ Sealed v1.13.1, 328 tests passing from a cold extract.
 
 Available on request.
 
+## Provenance
+
+I specified this system in English and directed AI implementation. I do not read
+or write the code. Every architectural decision, correction, and adversarial
+framing is mine; the implementation is not.
+
+That division is stated because it affects what I can and cannot answer. I can
+defend the design, the invariants, and the threat model. I cannot walk you
+through the implementation line by line. If a claim in the code diverges from a
+claim in the documentation, treat the documentation as the specification and the
+divergence as a defect. Two such divergences have already been found this way:
+modality present in the schema but never read by the verdict logic, and
+sign-once enforcement that was a string comparison rather than a mechanism.
+
 ## Candid boundary
 
 This is a research kernel with hostile audits per version and hash-sealed

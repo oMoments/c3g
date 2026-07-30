@@ -1,112 +1,125 @@
 # C3G — proof-carrying authorization for agent actions
 
-**Author:** Luke. **Status:** research kernel. Not production infrastructure.
+**Author:** Luke. **Status:** research kernel. Not production.
 
-Honest status labels throughout (proven / in-progress / not built) so this stays
-a record, not a pitch.
+Everything below is labeled proven, in progress, or not built. No claim without a
+label.
 
-## What it is
+## What it does
 
-An executable reference monitor for autonomous agent actions. A claim is
-proposed, independently reviewed, and ratified by a scope-authorized actor
-before it can authorize anything. Unratified claims never authorize. Conflicting
-ratified claims return `CONTESTED_DENY`. No visible authority returns
-`UNKNOWN_DENY`. Absence of a permit is never a permit.
+An AI agent proposes an action. C3G decides whether it was actually authorized,
+and hands back a receipt you can check.
 
-Every answer carries its support, counter-support, visible unresolved claims,
-its ratification cut, source hashes, and a deterministic answer hash.
+The rules:
 
-Python 3.12, standard library only. 328 tests. 58 JSON Schemas against 53
-generated instances.
+- Someone proposes a claim. Someone else reviews it. A third person with the
+  right scope ratifies it. Never the same person twice.
+- No ratification, no authority. An unratified claim authorizes nothing.
+- Two ratified claims that conflict return `CONTESTED_DENY`.
+- No authority found returns `UNKNOWN_DENY`.
+- Missing permission is never permission.
 
-## What was withdrawn after prior-art review
+Every answer comes with what supported it, what opposed it, what's still
+unresolved, who ratified it, source hashes, and one hash over the whole answer.
 
-Three claimed novel results were submitted to independent hostile review. All
-three came back matched to published work. They are withdrawn and reattributed,
-not quietly dropped:
+Python 3.12, standard library only. 328 tests. 58 schemas checked against 53
+instances.
 
-| Withdrawn claim | Prior art |
+## Three things I claimed were new. They weren't.
+
+I paid for hostile review of my own novelty claims. All three came back already
+published. Here they are, with who got there first:
+
+| What I claimed | Who did it first |
 |---|---|
-| Independent-freshness insufficiency / compatible dual cut | The Update Framework, Samuel et al., CCS 2010 — the snapshot role exists because individually valid, individually timely metadata does not imply a consistent repository state |
-| Hazard-scenario cost algebra | Minimum quorum size, intersection size, and transversal size — Malkhi, Reiter, Wool, J. Cryptology 2000; weighted set cover; cost-indexed adversary structures, Hirt–Maurer 2000, Garay et al. 2012 |
-| Serial composition asymmetry | AND/OR attack-tree cost algebra, Mauw–Oostdijk 2005; repeated labels, Kordy–Wideł |
+| Independent-freshness insufficiency / compatible dual cut | The Update Framework, Samuel et al., CCS 2010. Their snapshot role exists for exactly this reason — two things can each be valid and current and still not go together. |
+| Hazard-scenario cost algebra | Malkhi, Reiter, Wool, J. Cryptology 2000 — minimum quorum size, intersection size, transversal size. The cost part is weighted set cover. Hirt–Maurer 2000 and Garay et al. 2012 for the priced version. |
+| Serial composition asymmetry | Mauw–Oostdijk 2005, AND/OR attack trees. Kordy–Wideł for shared actors. |
 
-Two further corrections came out of the same review and are implemented:
+Same review found two real bugs. Both fixed:
 
-- The single-valued actor-to-domain map is withdrawn as an independence model.
-  A single-valued map induces a partition and cannot represent one actor
-  belonging simultaneously to a cloud, CA, jurisdiction, employer, and supply
-  chain. It survives only as an advertised-partition diagnostic.
-- Serial composition now refuses to compute from per-layer summaries. Identical
-  per-layer triples are executably shown to produce different composed costs.
-  Explicit actor incidence is required, fail-closed.
+- I used a single-valued map from actors to failure domains. That's wrong. One
+  person can sit in a cloud, a CA, a jurisdiction, an employer, and a supply
+  chain all at once, and a single-valued map can't say that. It's now only a
+  diagnostic, not a security model.
+- Serial composition used to compute from per-layer summaries. Those summaries
+  don't determine the answer — I can show two systems with identical summaries
+  and different real costs. It now refuses to compute without explicit actor
+  data.
 
-See `PRIOR_ART_FOUNDATIONS.md`.
+Details in `PRIOR_ART_FOUNDATIONS.md`.
 
-## What survives
+## What held up
 
-**Proven.** The persuasion-quotient invariance. The gate is implemented as
-`V = g ∘ π`, where `π` erases unauthenticated persuasive fields before the
-verdict is computed. Free-form model output is a low-integrity input that
-cannot influence the high-integrity authorization bit. A model may reverse its
-stated opinion under pressure; the verdict does not move. Exhaustively checked
-over 16 authenticated security fibers and 64 assignments of six persuasion
-fields — 1,024 verdicts, zero within-fiber verdict or digest changes.
+**Proven — the model can't talk its way past the gate.**
 
-Noninterference itself is not new (Goguen–Meseguer 1982). The candidate
-contribution is this specific use: separating institutional refusal from model
-agreement in an offline system where the model has no write capability.
+The gate is `V = g ∘ π`. `π` strips every unauthenticated persuasive field out
+of a request before the verdict gets computed. The model's words are
+low-integrity input. They cannot reach the authorization bit. The model can
+flip its own opinion under pressure and the verdict doesn't move.
 
-**Proven.** Retrieval cannot amplify authority. 648 candidate-superset verdict
-comparisons and 432 claim-drop comparisons, zero authority amplification, zero
-movement toward permit under evidence deletion.
+Checked exhaustively: 16 authenticated security fibers, 64 assignments of six
+persuasion fields, 1,024 verdicts. Zero verdict changes within a fiber. Zero
+digest changes.
 
-**In progress.** Durable monotonic heads and a real sign-once lock. A stale
-same-ID clone is not yet defeated.
+Noninterference isn't mine — that's Goguen–Meseguer 1982. What might be mine is
+this use of it: keeping a refusal separate from whether the model agrees with it,
+offline, where the model can't write anything.
 
-**Not built.** HSM key custody. Real BFT. Eight independently operated witness
-services. Externally audited failure-domain independence. Transactional
-external execution. These are physical deployment requirements, not properties
-this artifact claims.
+**Proven — retrieval can't manufacture authority.** 648 superset comparisons,
+432 claim-drop comparisons. Zero authority amplification. Deleting evidence
+never moves a verdict toward permit.
 
-## Why the agentic case
+**In progress —** durable monotonic heads and a real sign-once lock. A stale
+clone with the same ID still beats it.
 
-None of the cited prior art has an adversary whose prose can argue with the
-verdict. TUF's threat model has no sycophantic participant. Byzantine quorum
-systems assume faults, not persuasion. That threat is recent.
+**Not built —** HSM keys. Real BFT. Eight independently run witness services.
+Audited infrastructure diversity. Transactional execution. These need hardware
+and separate operators. This artifact does not claim them.
 
-In July 2026 a model system chained individually permitted capabilities into an
-unintended path across research and production infrastructure, and the affected
-party needed 17,000+ logged events and a self-hosted model to reconstruct it.
-C3G governs authorized action. It does not provide containment and does not
-replace isolation.
+## Why agents specifically
+
+None of the prior art above has an attacker that can argue with you. TUF's
+threat model has no sycophantic participant. Byzantine quorums assume faults,
+not persuasion. That problem is new.
+
+July 2026: a model system chained together permissions it legitimately had into
+a path nobody intended, across research and production infrastructure. The
+people hit needed 17,000+ logged events and a self-hosted model to work out what
+happened.
+
+C3G governs what an agent is allowed to do. It does not contain a process that
+never asked. It is not a replacement for isolation.
 
 ## Full release
 
-Sealed v1.13.1, 328 tests passing from a cold extract.
+v1.13.1, sealed. 328 tests pass from a cold extract.
 
 `452f14eed5193fc7da926feca22c638f7b31dc1083fa0c3bbf5e3d899ed5ec9f`
 
-Available on request.
+Ask and I'll send it.
 
-## Provenance
+## Who built what
 
-I specified this system in English and directed AI implementation. I do not read
-or write the code. Every architectural decision, correction, and adversarial
-framing is mine; the implementation is not.
+I specified this in English and directed AI to implement it. I don't read or
+write code. The design decisions, the corrections, and the adversarial framing
+are mine. The code is not.
 
-That division is stated because it affects what I can and cannot answer. I can
-defend the design, the invariants, and the threat model. I cannot walk you
-through the implementation line by line. If a claim in the code diverges from a
-claim in the documentation, treat the documentation as the specification and the
-divergence as a defect. Two such divergences have already been found this way:
-modality present in the schema but never read by the verdict logic, and
-sign-once enforcement that was a string comparison rather than a mechanism.
+Saying so because it changes what I can answer. Ask me about the design, the
+invariants, or the threat model and I'll defend it. Ask me to walk you through
+the implementation line by line and I can't.
 
-## Candid boundary
+It also means there's a specific way this breaks: the docs say one thing and the
+code does another. Treat the docs as the spec and any gap as a bug. Two have
+already turned up that way — modality sitting in the schema that the verdict
+logic never read, and sign-once "enforcement" that was really just a string
+comparison.
 
-This is a research kernel with hostile audits per version and hash-sealed
-releases. It is not production Byzantine infrastructure, not a deployed system,
-and has no external users. The mathematics is established prior art, correctly
-attributed above. The contribution claimed here is an executable, exhaustively
-checked instance for a threat model that postdates the literature it stands on.
+## What this isn't
+
+No users. Not deployed. Not production Byzantine infrastructure. Every audit so
+far was one I commissioned myself.
+
+The math is other people's, credited above. What I'm claiming is a working,
+exhaustively checked version of it for a threat model that didn't exist when any
+of it was written.
